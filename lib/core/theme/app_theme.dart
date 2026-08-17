@@ -88,7 +88,7 @@ class AppTheme {
         tertiary: AppColors.aiHorizon,
       ),
       textTheme: _buildTextTheme(AppColors.textPrimaryLight, AppColors.textSecondaryLight),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.cardSurfaceDark,
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -152,7 +152,7 @@ class AppTheme {
         tertiary: AppColors.deepSkyBlue,
       ),
       textTheme: _buildTextTheme(AppColors.textPrimaryDark, AppColors.textSecondaryDark),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: AppColors.pureWhite,
         elevation: 0,
         shape: RoundedRectangleBorder(
