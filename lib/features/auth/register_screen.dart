@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/widgets/sentinel_button.dart';
-import '../../core/theme/app_theme.dart';
+
 
 class RegisterScreen extends StatelessWidget {
   const RegisterScreen({super.key});
@@ -66,7 +66,7 @@ class RegisterScreen extends StatelessWidget {
                     Text(
                       'By creating an account, you agree to our Terms of Service and Privacy Policy.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                         fontSize: 12,
                       ),
                       textAlign: TextAlign.center,

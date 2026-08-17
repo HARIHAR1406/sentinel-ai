@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
-import '../../shared/widgets/sentinel_button.dart';
+
 import '../../shared/widgets/ai_disclaimer_card.dart';
 
 class SafetyAssistantScreen extends StatelessWidget {
@@ -31,7 +31,7 @@ class SafetyAssistantScreen extends StatelessWidget {
                           topRight: Radius.circular(16),
                           bottomRight: Radius.circular(16),
                         ),
-                        border: Border.all(color: AppColors.aiHorizon.withOpacity(0.3)),
+                        border: Border.all(color: AppColors.aiHorizon.withValues(alpha: 0.3)),
                       ),
                       child: const Text('Hello. I am the Sentinel AI Assistant. How can I help you?'),
                     ),

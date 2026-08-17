@@ -10,7 +10,7 @@ class AlertsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Simulating empty vs populated state based on an arbitrary condition
     // For UI validation, we'll show a populated list.
-    const bool hasAlerts = true;
+    bool hasAlerts = true;
 
     return Scaffold(
       appBar: AppBar(

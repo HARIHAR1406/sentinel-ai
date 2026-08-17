@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
-import '../../shared/widgets/risk_chip.dart';
+
 
 class IncidentTrackingScreen extends StatelessWidget {
   const IncidentTrackingScreen({super.key});

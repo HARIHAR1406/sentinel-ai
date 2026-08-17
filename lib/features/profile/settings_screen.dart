@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
-import 'package:go_router/go_router.dart';
+
 import '../../shared/widgets/sentinel_button.dart';
 
 class SettingsScreen extends StatelessWidget {

@@ -14,7 +14,16 @@ import 'features/incident/incident_tracking_screen.dart';
 import 'features/profile/trusted_contacts_screen.dart';
 import 'features/profile/settings_screen.dart';
 import 'features/ai_assistant/safety_assistant_screen.dart';
-import 'features/shared/generic_feature_screen.dart';
+import 'features/incident/nearby_incidents_screen.dart';
+import 'features/incident/historical_safety_screen.dart';
+import 'features/map/location_risk_screen.dart';
+import 'features/map/route_comparison_screen.dart';
+import 'features/map/saved_locations_screen.dart';
+import 'features/ai_assistant/ai_safety_suggestions_screen.dart';
+import 'features/ai_assistant/ai_classification_preview_screen.dart';
+import 'features/profile/emergency_support_screen.dart';
+import 'features/profile/trip_safety_mode_screen.dart';
+import 'features/profile/about_screen.dart';
 import 'shared/widgets/app_bottom_nav.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -89,17 +98,17 @@ final router = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const SafetyAssistantScreen(),
     ),
-    // Generic routes for remaining scaffolds
-    GoRoute(path: '/nearby_incidents', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const GenericFeatureScreen(title: 'Nearby Incidents')),
-    GoRoute(path: '/location_risk', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const GenericFeatureScreen(title: 'Location Risk')),
-    GoRoute(path: '/route_comparison', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const GenericFeatureScreen(title: 'Route Comparison')),
-    GoRoute(path: '/ai_safety_suggestions', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const GenericFeatureScreen(title: 'AI Safety Suggestions')),
-    GoRoute(path: '/historical_safety', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const GenericFeatureScreen(title: 'Historical Safety')),
-    GoRoute(path: '/ai_classification_preview', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const GenericFeatureScreen(title: 'AI Classification Preview')),
-    GoRoute(path: '/emergency_support', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const GenericFeatureScreen(title: 'Emergency Support')),
-    GoRoute(path: '/trip_safety_mode', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const GenericFeatureScreen(title: 'Trip Safety Mode')),
-    GoRoute(path: '/saved_locations', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const GenericFeatureScreen(title: 'Saved Locations')),
-    GoRoute(path: '/about', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const GenericFeatureScreen(title: 'Help & Support')),
+    // Generic routes replaced with real screens
+    GoRoute(path: '/nearby_incidents', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const NearbyIncidentsScreen()),
+    GoRoute(path: '/location_risk', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const LocationRiskScreen()),
+    GoRoute(path: '/route_comparison', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const RouteComparisonScreen()),
+    GoRoute(path: '/ai_safety_suggestions', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const AiSafetySuggestionsScreen()),
+    GoRoute(path: '/historical_safety', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const HistoricalSafetyScreen()),
+    GoRoute(path: '/ai_classification_preview', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const AiClassificationPreviewScreen()),
+    GoRoute(path: '/emergency_support', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const EmergencySupportScreen()),
+    GoRoute(path: '/trip_safety_mode', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const TripSafetyModeScreen()),
+    GoRoute(path: '/saved_locations', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const SavedLocationsScreen()),
+    GoRoute(path: '/about', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const AboutScreen()),
   ],
 );
 

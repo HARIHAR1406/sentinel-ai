@@ -31,7 +31,7 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
             // Progress Bar
             LinearProgressIndicator(
               value: (_currentStep + 1) / 5,
-              backgroundColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+              backgroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
               valueColor: const AlwaysStoppedAnimation<Color>(AppColors.sentinelBlue),
             ),
             Expanded(
@@ -154,7 +154,7 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
                             const Text('Severity: Medium'),
                             const SizedBox(height: 8),
                             Text('AI recommendations are suggestions and are not verified facts.', 
-                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), fontSize: 12)),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12)),
                           ],
                         ),
                       ),

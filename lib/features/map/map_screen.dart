@@ -109,7 +109,7 @@ class MapScreen extends StatelessWidget {
                         height: 4,
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
