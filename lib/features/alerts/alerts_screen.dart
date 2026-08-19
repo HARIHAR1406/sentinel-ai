@@ -6,12 +6,30 @@ import '../../shared/widgets/sentinel_empty_state.dart';
 class AlertsScreen extends StatelessWidget {
   const AlertsScreen({super.key});
 
+  // Temporary mock data for UI validation
+  static final List<Map<String, dynamic>> _mockAlerts = [
+    {
+      'title': 'High Risk Area Ahead',
+      'description': 'You are approaching Marina Road, which currently has a High Risk classification due to recent reports.',
+      'time': 'Just now',
+      'level': RiskLevel.high,
+    },
+    {
+      'title': 'Trip Safety Alert',
+      'description': 'Mark Reynolds has arrived safely at their destination.',
+      'time': '2 hours ago',
+      'level': RiskLevel.low,
+    },
+    {
+      'title': 'New Incident Reported',
+      'description': 'Suspicious activity reported 400m from your current location.',
+      'time': 'Yesterday',
+      'level': RiskLevel.medium,
+    },
+  ];
+
   @override
   Widget build(BuildContext context) {
-    // Simulating empty vs populated state based on an arbitrary condition
-    // For UI validation, we'll show a populated list.
-    bool hasAlerts = true;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Safety Alerts'),
@@ -22,39 +40,26 @@ class AlertsScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: hasAlerts ? _buildAlertsList(context) : _buildEmptyState(),
+        child: _mockAlerts.isNotEmpty ? _buildAlertsList(context) : _buildEmptyState(),
       ),
     );
   }
 
   Widget _buildAlertsList(BuildContext context) {
-    return ListView(
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
-      children: [
-        _buildAlertCard(
+      itemCount: _mockAlerts.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final alert = _mockAlerts[index];
+        return _buildAlertCard(
           context: context,
-          title: 'High Risk Area Ahead',
-          description: 'You are approaching Marina Road, which currently has a High Risk classification due to recent reports.',
-          time: 'Just now',
-          level: RiskLevel.high,
-        ),
-        const SizedBox(height: 16),
-        _buildAlertCard(
-          context: context,
-          title: 'Trip Safety Alert',
-          description: 'Mark Reynolds has arrived safely at their destination.',
-          time: '2 hours ago',
-          level: RiskLevel.low,
-        ),
-        const SizedBox(height: 16),
-        _buildAlertCard(
-          context: context,
-          title: 'New Incident Reported',
-          description: 'Suspicious activity reported 400m from your current location.',
-          time: 'Yesterday',
-          level: RiskLevel.medium,
-        ),
-      ],
+          title: alert['title'] as String,
+          description: alert['description'] as String,
+          time: alert['time'] as String,
+          level: alert['level'] as RiskLevel,
+        );
+      },
     );
   }
 
