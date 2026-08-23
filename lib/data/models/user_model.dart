@@ -3,6 +3,7 @@ class UserModel {
   final String name;
   final String email;
   final String phone;
+  final String role;
   final Map<String, dynamic> preferences;
 
   const UserModel({
@@ -10,8 +11,28 @@ class UserModel {
     required this.name,
     required this.email,
     required this.phone,
+    required this.role,
     required this.preferences,
   });
 
-  // TODO(Phase 7.2): Add copyWith, toMap, fromMap, etc.
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'role': role,
+      'preferences': preferences,
+    };
+  }
+
+  factory UserModel.fromMap(Map<String, dynamic> map, String id) {
+    return UserModel(
+      id: id,
+      name: map['name'] ?? '',
+      email: map['email'] ?? '',
+      phone: map['phone'] ?? '',
+      role: map['role'] ?? 'user',
+      preferences: map['preferences'] != null ? Map<String, dynamic>.from(map['preferences']) : {},
+    );
+  }
 }

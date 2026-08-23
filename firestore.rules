@@ -1,9 +1,16 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     match /users/{userId} {
-      // Users can read and write their own profile
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Users can write their profile, but cannot escalate their role.
+      allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.role == 'user';
+      allow update: if request.auth != null && request.auth.uid == userId && 
+                    (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role == resource.data.role);
       
       match /trusted_contacts/{contactId} {
         // Only the owner can access their trusted contacts
@@ -17,11 +24,8 @@ service cloud.firestore {
     }
     
     match /incidents/{incidentId} {
-      // Anyone can read verified incidents
-      allow read: if resource.data.verificationStatus == 'verified';
-      
-      // Users can read their own incidents regardless of status
-      allow read: if request.auth != null && resource.data.reportedBy == request.auth.uid;
+      // Anyone can read verified incidents. Admins can read all. Users can read their own.
+      allow read: if resource.data.verificationStatus == 'verified' || isAdmin() || (request.auth != null && resource.data.reportedBy == request.auth.uid);
       
       // Only authenticated users can create incidents
       // Must be created with their own UID and default to 'pending'
@@ -29,13 +33,20 @@ service cloud.firestore {
                     && request.resource.data.reportedBy == request.auth.uid
                     && request.resource.data.verificationStatus == 'pending';
                     
-      // Users can update their own incidents (optional for phase 7.4, but good practice)
+      // Users can update their own incidents, but cannot change verification fields
       allow update: if request.auth != null 
                     && resource.data.reportedBy == request.auth.uid
-                    && request.resource.data.reportedBy == request.auth.uid;
+                    && request.resource.data.reportedBy == request.auth.uid
+                    && request.resource.data.verificationStatus == resource.data.verificationStatus
+                    && request.resource.data.get('verifiedBy', null) == resource.data.get('verifiedBy', null)
+                    && request.resource.data.get('verifiedAt', null) == resource.data.get('verifiedAt', null)
+                    && request.resource.data.get('rejectionReason', null) == resource.data.get('rejectionReason', null);
                     
-      // Users can delete their own incidents
-      allow delete: if request.auth != null && resource.data.reportedBy == request.auth.uid;
+      // Admins can update any incident (especially verification fields)
+      allow update: if isAdmin();
+                    
+      // Users can delete their own incidents, Admins can delete any
+      allow delete: if (request.auth != null && resource.data.reportedBy == request.auth.uid) || isAdmin();
     }
   }
 }

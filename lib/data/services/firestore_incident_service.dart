@@ -14,6 +14,9 @@ class FirestoreIncidentService implements DatabaseService {
     await _firestore.collection('users').doc(user.id).set({
       'email': user.email,
       'name': user.name,
+      'phone': user.phone,
+      'role': user.role,
+      'preferences': user.preferences,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -23,13 +26,7 @@ class FirestoreIncidentService implements DatabaseService {
     final doc = await _firestore.collection('users').doc(uid).get();
     if (!doc.exists) return null;
     final data = doc.data()!;
-    return UserModel(
-      id: doc.id,
-      email: data['email'] ?? '',
-      name: data['name'] ?? '',
-      phone: data['phone'] ?? '',
-      preferences: data['preferences'] ?? {},
-    );
+    return UserModel.fromMap(data, doc.id);
   }
 
   @override
@@ -56,6 +53,7 @@ class FirestoreIncidentService implements DatabaseService {
     // Real geospatial queries require GeoFire or composite indexes.
     return _firestore
         .collection('incidents')
+        .where('verificationStatus', isEqualTo: 'verified')
         .orderBy('timestamp', descending: true)
         .limit(50)
         .snapshots()
@@ -63,6 +61,60 @@ class FirestoreIncidentService implements DatabaseService {
       return snapshot.docs
           .map((doc) => IncidentModel.fromFirestore(doc))
           .toList();
+    });
+  }
+
+  @override
+  Stream<List<IncidentModel>> getPendingIncidentsStream() {
+    return _firestore
+        .collection('incidents')
+        .where('verificationStatus', isEqualTo: 'pending')
+        .orderBy('timestamp', descending: true)
+        .limit(100)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => IncidentModel.fromFirestore(doc))
+          .toList();
+    });
+  }
+
+  @override
+  Future<void> verifyIncident(String incidentId) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Authentication required');
+    await _firestore.collection('incidents').doc(incidentId).update({
+      'verificationStatus': 'verified',
+      'status': 'verified',
+      'verifiedBy': user.uid,
+      'verifiedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  @override
+  Future<void> rejectIncident(String incidentId, String reason) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Authentication required');
+    await _firestore.collection('incidents').doc(incidentId).update({
+      'verificationStatus': 'rejected',
+      'status': 'rejected',
+      'verifiedBy': user.uid,
+      'verifiedAt': FieldValue.serverTimestamp(),
+      'rejectionReason': reason,
+    });
+  }
+
+  @override
+  Future<void> markIncidentDuplicate(String incidentId, String originalIncidentId) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Authentication required');
+    await _firestore.collection('incidents').doc(incidentId).update({
+      'verificationStatus': 'duplicate',
+      'status': 'rejected', // duplicates are logically rejected from public map
+      'verifiedBy': user.uid,
+      'verifiedAt': FieldValue.serverTimestamp(),
+      'isDuplicate': true,
+      'duplicateOf': originalIncidentId,
     });
   }
 

@@ -106,7 +106,7 @@ class _ReportIncidentScreenState extends ConsumerState<ReportIncidentScreen> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Report submitted successfully.')),
+          const SnackBar(content: Text('Your incident has been submitted for verification.')),
         );
         context.pop();
       }

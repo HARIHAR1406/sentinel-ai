@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'incident_ai_analysis.dart';
 
 enum IncidentStatus { pending, verified, rejected, resolved }
-enum VerificationStatus { pending, verified, rejected }
+enum VerificationStatus { pending, verified, rejected, duplicate }
 enum IncidentSeverity { low, medium, high, critical }
 
 class IncidentModel {
@@ -23,6 +23,9 @@ class IncidentModel {
   final bool isDuplicate;
   final String? duplicateOf;
   final IncidentAIAnalysis? aiAnalysis;
+  final String? verifiedBy;
+  final DateTime? verifiedAt;
+  final String? rejectionReason;
 
   const IncidentModel({
     required this.id,
@@ -42,6 +45,9 @@ class IncidentModel {
     this.isDuplicate = false,
     this.duplicateOf,
     this.aiAnalysis,
+    this.verifiedBy,
+    this.verifiedAt,
+    this.rejectionReason,
   });
 
   factory IncidentModel.fromFirestore(DocumentSnapshot doc) {
@@ -68,6 +74,9 @@ class IncidentModel {
       isDuplicate: data['isDuplicate'] ?? false,
       duplicateOf: data['duplicateOf'],
       aiAnalysis: data['aiAnalysis'] != null ? IncidentAIAnalysis.fromMap(Map<String, dynamic>.from(data['aiAnalysis'])) : null,
+      verifiedBy: data['verifiedBy'],
+      verifiedAt: (data['verifiedAt'] as Timestamp?)?.toDate(),
+      rejectionReason: data['rejectionReason'],
     );
   }
 
@@ -88,6 +97,9 @@ class IncidentModel {
       'isDuplicate': isDuplicate,
       if (duplicateOf != null) 'duplicateOf': duplicateOf,
       if (aiAnalysis != null) 'aiAnalysis': aiAnalysis!.toMap(),
+      if (verifiedBy != null) 'verifiedBy': verifiedBy,
+      if (verifiedAt != null) 'verifiedAt': Timestamp.fromDate(verifiedAt!),
+      if (rejectionReason != null) 'rejectionReason': rejectionReason,
     };
   }
 
@@ -115,6 +127,7 @@ class IncidentModel {
     switch (value) {
       case 'verified': return VerificationStatus.verified;
       case 'rejected': return VerificationStatus.rejected;
+      case 'duplicate': return VerificationStatus.duplicate;
       case 'pending':
       default: return VerificationStatus.pending;
     }

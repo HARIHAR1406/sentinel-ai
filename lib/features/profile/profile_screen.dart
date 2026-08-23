@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 
-class ProfileScreen extends StatelessWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/services/database_service.dart';
+
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userProfileAsync = ref.watch(currentUserProfileProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -45,6 +49,24 @@ class ProfileScreen extends StatelessWidget {
             _buildListTile(context, Icons.shield_outlined, 'My Incident Reports', () => context.push('/incident_tracking')),
             _buildListTile(context, Icons.people_outline, 'Trusted Contacts', () => context.push('/trusted_contacts')),
             _buildListTile(context, Icons.location_on_outlined, 'Saved Locations', () => context.push('/saved_locations')),
+            
+            userProfileAsync.when(
+              data: (user) {
+                if (user?.role == 'admin') {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 24),
+                      _buildSectionHeader(context, 'Administration'),
+                      _buildListTile(context, Icons.admin_panel_settings, 'Incident Moderation', () => context.push('/incident_verification')),
+                    ],
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
             
             const SizedBox(height: 24),
             _buildSectionHeader(context, 'Preferences'),

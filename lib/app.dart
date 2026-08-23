@@ -24,6 +24,7 @@ import 'features/ai_assistant/ai_classification_preview_screen.dart';
 import 'features/profile/emergency_support_screen.dart';
 import 'features/profile/trip_safety_mode_screen.dart';
 import 'features/profile/about_screen.dart';
+import 'features/admin/incident_verification_screen.dart';
 import 'shared/widgets/app_bottom_nav.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -108,6 +109,7 @@ final router = GoRouter(
     GoRoute(path: '/emergency_support', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const EmergencySupportScreen()),
     GoRoute(path: '/trip_safety_mode', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const TripSafetyModeScreen()),
     GoRoute(path: '/saved_locations', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const SavedLocationsScreen()),
+    GoRoute(path: '/incident_verification', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const IncidentVerificationScreen()),
     GoRoute(path: '/about', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const AboutScreen()),
   ],
 );
