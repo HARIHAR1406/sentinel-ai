@@ -6,6 +6,9 @@ class UserModel {
   final String role;
   final Map<String, dynamic> preferences;
 
+  bool get incidentAlertsEnabled => preferences['incidentAlertsEnabled'] ?? true;
+  bool get highRiskAlertsEnabled => preferences['highRiskAlertsEnabled'] ?? true;
+
   const UserModel({
     required this.id,
     required this.name,

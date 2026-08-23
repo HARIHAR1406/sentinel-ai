@@ -50,7 +50,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
-  Set<Marker> _buildMarkers(List<IncidentModel> incidents) {
+  Set<Marker> _buildMarkers(BuildContext context, List<IncidentModel> incidents) {
     final markers = <Marker>{};
     final currentUser = FirebaseAuth.instance.currentUser;
     
@@ -80,6 +80,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           markerId: MarkerId(incident.id),
           position: LatLng(incident.latitude, incident.longitude),
           icon: BitmapDescriptor.defaultMarkerWithHue(hue),
+          onTap: () {
+            if (incident.verificationStatus == VerificationStatus.verified) {
+              context.push('/incident_detail', extra: incident);
+            }
+          },
           infoWindow: InfoWindow(
             title: incident.title,
             snippet: incident.verificationStatus == VerificationStatus.pending ? 'Pending Verification' : 'Verified',
@@ -107,7 +112,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             myLocationEnabled: locationState.status == LocationStatus.ready,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
-            markers: _buildMarkers(incidents),
+            markers: _buildMarkers(context, incidents),
             onMapCreated: (GoogleMapController controller) {
               if (!_controller.isCompleted) {
                 _controller.complete(controller);
@@ -289,6 +294,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                   title: Text(incident.title),
                                   subtitle: Text('${incident.verificationStatus == VerificationStatus.verified ? "Verified" : "Pending"} • $timeStr'),
                                   trailing: RiskChip(level: riskLevel),
+                                  onTap: () {
+                                    if (incident.verificationStatus == VerificationStatus.verified) {
+                                      context.push('/incident_detail', extra: incident);
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Unverified incidents cannot be viewed in detail.')),
+                                      );
+                                    }
+                                  },
                                 ),
                                 const Divider(),
                               ],

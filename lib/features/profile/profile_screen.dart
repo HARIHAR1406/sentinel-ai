@@ -65,7 +65,7 @@ class ProfileScreen extends ConsumerWidget {
                 return const SizedBox.shrink();
               },
               loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (e, st) => const SizedBox.shrink(),
             ),
             
             const SizedBox(height: 24),

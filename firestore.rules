@@ -21,6 +21,17 @@ service cloud.firestore {
         // Only the owner can access their emergency records
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+      
+      match /device_tokens/{tokenId} {
+        // Only the owner can read/write their device tokens
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      match /notifications/{notificationId} {
+        // Only the owner can read/write their notifications
+        // Note: Creation usually happens via backend, but users can read and update (mark read)
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
     
     match /incidents/{incidentId} {

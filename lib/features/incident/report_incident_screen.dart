@@ -351,7 +351,7 @@ class _ReportIncidentScreenState extends ConsumerState<ReportIncidentScreen> {
                                    children: [
                                      const Text('SIMILAR INCIDENT DETECTED', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
                                      const SizedBox(height: 4),
-                                     Text('Status: ' + _aiAnalysis!.duplicateStatus.replaceAll('_', ' ')),
+                                     Text('Status: \${_aiAnalysis!.duplicateStatus.replaceAll("_", " ")}'),
                                      const SizedBox(height: 4),
                                      const Text('A very similar incident was recently reported. You may still submit this report, but it will be flagged for review.', style: TextStyle(fontSize: 12)),
                                    ]

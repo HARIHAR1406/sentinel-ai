@@ -25,7 +25,10 @@ import 'features/profile/emergency_support_screen.dart';
 import 'features/profile/trip_safety_mode_screen.dart';
 import 'features/profile/about_screen.dart';
 import 'features/admin/incident_verification_screen.dart';
+import 'features/incident/incident_detail_screen.dart';
+import 'features/notifications/notification_center_screen.dart';
 import 'shared/widgets/app_bottom_nav.dart';
+import 'data/models/incident_model.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -111,6 +114,15 @@ final router = GoRouter(
     GoRoute(path: '/saved_locations', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const SavedLocationsScreen()),
     GoRoute(path: '/incident_verification', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const IncidentVerificationScreen()),
     GoRoute(path: '/about', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const AboutScreen()),
+    GoRoute(
+      path: '/incident_detail',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final incident = state.extra as IncidentModel;
+        return IncidentDetailScreen(incident: incident);
+      },
+    ),
+    GoRoute(path: '/notifications', parentNavigatorKey: _rootNavigatorKey, builder: (c, s) => const NotificationCenterScreen()),
   ],
 );
 

@@ -66,55 +66,67 @@ class NearbyIncidentsScreen extends ConsumerWidget {
                 }
 
                 return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                incident.title,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () {
+                      if (incident.verificationStatus == VerificationStatus.verified) {
+                        context.push('/incident_detail', extra: incident);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Unverified incidents cannot be viewed in detail.')),
+                        );
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  incident.title,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                            ),
-                            RiskChip(level: riskLevel),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.location_on_outlined, size: 16, color: theme.colorScheme.secondary),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                '\${incident.latitude.toStringAsFixed(4)}, \${incident.longitude.toStringAsFixed(4)}',
+                              RiskChip(level: riskLevel),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(Icons.location_on_outlined, size: 16, color: theme.colorScheme.secondary),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  '\${incident.latitude.toStringAsFixed(4)}, \${incident.longitude.toStringAsFixed(4)}',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.secondary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(Icons.access_time_outlined, size: 16, color: theme.colorScheme.secondary),
+                              const SizedBox(width: 4),
+                              Text(
+                                timeStr,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.colorScheme.secondary,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(Icons.access_time_outlined, size: 16, color: theme.colorScheme.secondary),
-                            const SizedBox(width: 4),
-                            Text(
-                              timeStr,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.secondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
