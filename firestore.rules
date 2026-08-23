@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      // Users can read and write their own profile
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    match /incidents/{incidentId} {
+      // Anyone can read verified incidents
+      allow read: if resource.data.verificationStatus == 'verified';
+      
+      // Users can read their own incidents regardless of status
+      allow read: if request.auth != null && resource.data.reportedBy == request.auth.uid;
+      
+      // Only authenticated users can create incidents
+      // Must be created with their own UID and default to 'pending'
+      allow create: if request.auth != null 
+                    && request.resource.data.reportedBy == request.auth.uid
+                    && request.resource.data.verificationStatus == 'pending';
+                    
+      // Users can update their own incidents (optional for phase 7.4, but good practice)
+      allow update: if request.auth != null 
+                    && resource.data.reportedBy == request.auth.uid
+                    && request.resource.data.reportedBy == request.auth.uid;
+                    
+      // Users can delete their own incidents
+      allow delete: if request.auth != null && resource.data.reportedBy == request.auth.uid;
+    }
+  }
+}

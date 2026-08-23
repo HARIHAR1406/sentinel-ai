@@ -1,20 +1,129 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:uuid/uuid.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/sentinel_button.dart';
+import '../../data/services/database_service.dart';
+import '../../data/services/location_service.dart';
+import '../../data/models/incident_model.dart';
 
-class ReportIncidentScreen extends StatefulWidget {
+class ReportIncidentScreen extends ConsumerStatefulWidget {
   const ReportIncidentScreen({super.key});
 
   @override
-  State<ReportIncidentScreen> createState() => _ReportIncidentScreenState();
+  ConsumerState<ReportIncidentScreen> createState() => _ReportIncidentScreenState();
 }
 
-class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
+class _ReportIncidentScreenState extends ConsumerState<ReportIncidentScreen> {
   int _currentStep = 0;
+  bool _isSubmitting = false;
+
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  String _selectedCategory = 'Suspicious Activity';
+
+  final List<String> _categories = [
+    'Suspicious Activity',
+    'Theft',
+    'Harassment',
+    'Road Accident',
+    'Fire Hazard',
+    'Missing Person',
+    'Public Hazard',
+    'Medical Emergency'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Ensure we have location
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(locationServiceProvider.notifier).initializeAndGetLocation();
+    });
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitReport() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must be logged in to report an incident.')),
+      );
+      return;
+    }
+
+    final title = _titleController.text.trim();
+    final description = _descriptionController.text.trim();
+
+    if (title.isEmpty || description.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please provide a title and description.')),
+      );
+      return;
+    }
+
+    final locationState = ref.read(locationServiceProvider);
+    if (locationState.position == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Current location is required.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final incident = IncidentModel(
+        id: const Uuid().v4(),
+        type: _selectedCategory.toLowerCase().replaceAll(' ', '_'),
+        title: title,
+        description: description,
+        latitude: locationState.position!.latitude,
+        longitude: locationState.position!.longitude,
+        reportedBy: user.uid,
+        severity: IncidentSeverity.medium, // Default for now
+        status: IncidentStatus.pending,
+        verificationStatus: VerificationStatus.pending,
+        timestamp: DateTime.now(),
+      );
+
+      await ref.read(databaseServiceProvider).reportIncident(incident);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Report submitted successfully.')),
+        );
+        context.pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit report: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final locationState = ref.watch(locationServiceProvider);
+    
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -48,8 +157,7 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
                     if (_currentStep < 4) {
                       setState(() => _currentStep += 1);
                     } else {
-                      // Submit
-                      context.pop();
+                      _submitReport();
                     }
                   },
                   onStepCancel: () {
@@ -66,8 +174,8 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
                         children: [
                           Expanded(
                             child: SentinelButton(
-                              label: _currentStep == 4 ? 'Submit Report' : 'Continue',
-                              onPressed: details.onStepContinue!,
+                              label: _isSubmitting ? 'Submitting...' : (_currentStep == 4 ? 'Submit Report' : 'Continue'),
+                              onPressed: _isSubmitting ? () {} : details.onStepContinue!,
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -76,7 +184,7 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
                               child: SentinelButton(
                                 label: 'Back',
                                 isGhost: true,
-                                onPressed: details.onStepCancel!,
+                                onPressed: _isSubmitting ? () {} : details.onStepCancel!,
                               ),
                             ),
                         ],
@@ -90,11 +198,18 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
                         children: [
                           TextField(
                             decoration: const InputDecoration(labelText: 'Incident Location', prefixIcon: Icon(Icons.location_on)),
-                            controller: TextEditingController(text: 'Current Location'),
+                            controller: TextEditingController(
+                              text: locationState.position != null 
+                                  ? '\${locationState.position!.latitude.toStringAsFixed(4)}, \${locationState.position!.longitude.toStringAsFixed(4)}'
+                                  : 'Locating...',
+                            ),
+                            readOnly: true,
                           ),
                           const SizedBox(height: 16),
-                          const TextField(
-                            decoration: InputDecoration(labelText: 'Time of Incident', prefixIcon: Icon(Icons.access_time)),
+                          TextField(
+                            decoration: const InputDecoration(labelText: 'Time of Incident', prefixIcon: Icon(Icons.access_time)),
+                            controller: TextEditingController(text: 'Now'),
+                            readOnly: true,
                           ),
                         ],
                       ),
@@ -103,13 +218,33 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
                     Step(
                       title: const Text('Incident Details'),
                       content: Column(
-                        children: const [
-                          TextField(
-                            decoration: InputDecoration(labelText: 'Category', suffixIcon: Icon(Icons.arrow_drop_down)),
+                        children: [
+                          DropdownButtonFormField<String>(
+                            initialValue: _selectedCategory,
+                            decoration: const InputDecoration(labelText: 'Category'),
+                            items: _categories.map((String category) {
+                              return DropdownMenuItem(
+                                value: category,
+                                child: Text(category),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  _selectedCategory = newValue;
+                                });
+                              }
+                            },
                           ),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 16),
                           TextField(
-                            decoration: InputDecoration(labelText: 'Description'),
+                            controller: _titleController,
+                            decoration: const InputDecoration(labelText: 'Short Title'),
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: _descriptionController,
+                            decoration: const InputDecoration(labelText: 'Description'),
                             maxLines: 4,
                           ),
                         ],
@@ -150,7 +285,7 @@ class _ReportIncidentScreenState extends State<ReportIncidentScreen> {
                           children: [
                             const Text('AI Analysis Complete', style: TextStyle(color: AppColors.aiHorizon, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
-                            const Text('Category: Suspicious Activity'),
+                            Text('Category: \$_selectedCategory'),
                             const Text('Severity: Medium'),
                             const SizedBox(height: 8),
                             Text('AI recommendations are suggestions and are not verified facts.', 

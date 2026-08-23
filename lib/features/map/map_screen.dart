@@ -6,6 +6,9 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/risk_chip.dart';
 import '../../data/services/location_service.dart';
+import '../../data/services/database_service.dart';
+import '../../data/models/incident_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
@@ -17,7 +20,7 @@ class MapScreen extends ConsumerStatefulWidget {
 class _MapScreenState extends ConsumerState<MapScreen> {
   final Completer<GoogleMapController> _controller = Completer<GoogleMapController>();
 
-  // Default initial camera position (e.g., center of the US or a placeholder)
+  // Default initial camera position
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(39.8283, -98.5795),
     zoom: 4.0,
@@ -47,10 +50,52 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     }
   }
 
+  Set<Marker> _buildMarkers(List<IncidentModel> incidents) {
+    final markers = <Marker>{};
+    final currentUser = FirebaseAuth.instance.currentUser;
+    
+    for (final incident in incidents) {
+      // Only show verified incidents or pending incidents created by the current user
+      if (incident.verificationStatus != VerificationStatus.verified && incident.reportedBy != currentUser?.uid) {
+        continue;
+      }
+      
+      // Determine color based on severity
+      double hue;
+      switch (incident.severity) {
+        case IncidentSeverity.critical:
+        case IncidentSeverity.high:
+          hue = BitmapDescriptor.hueRed;
+          break;
+        case IncidentSeverity.medium:
+          hue = BitmapDescriptor.hueOrange;
+          break;
+        case IncidentSeverity.low:
+          hue = BitmapDescriptor.hueYellow;
+          break;
+      }
+
+      markers.add(
+        Marker(
+          markerId: MarkerId(incident.id),
+          position: LatLng(incident.latitude, incident.longitude),
+          icon: BitmapDescriptor.defaultMarkerWithHue(hue),
+          infoWindow: InfoWindow(
+            title: incident.title,
+            snippet: incident.verificationStatus == VerificationStatus.pending ? 'Pending Verification' : 'Verified',
+          ),
+        ),
+      );
+    }
+    return markers;
+  }
+
   @override
   Widget build(BuildContext context) {
     final locationState = ref.watch(locationServiceProvider);
-    final isDarkTheme = Theme.of(context).brightness == Brightness.dark;
+    final incidentsAsyncValue = ref.watch(nearbyIncidentsStreamProvider);
+    
+    final incidents = incidentsAsyncValue.asData?.value ?? [];
 
     return Scaffold(
       body: Stack(
@@ -60,30 +105,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             mapType: MapType.normal,
             initialCameraPosition: _initialPosition,
             myLocationEnabled: locationState.status == LocationStatus.ready,
-            myLocationButtonEnabled: false, // We use a custom button
+            myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
+            markers: _buildMarkers(incidents),
             onMapCreated: (GoogleMapController controller) {
               if (!_controller.isCompleted) {
                 _controller.complete(controller);
               }
-              // Optional: set custom map style here if needed
             },
           ),
           
-          // Simulated Map Pins
-          // (These will eventually be real Markers in the GoogleMap widget)
-          // For now, they are preserved as UI elements over the map.
-          const Positioned(
-            top: 200,
-            left: 100,
-            child: Icon(Icons.location_on, color: AppColors.riskHighDark, size: 40),
-          ),
-          const Positioned(
-            top: 400,
-            left: 250,
-            child: Icon(Icons.location_on, color: AppColors.riskMediumDark, size: 40),
-          ),
-
           // Search Bar Overlay
           SafeArea(
             child: Padding(
@@ -117,7 +148,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Location State Overlay (if not ready/loading)
+                    // Location State Overlay
                     if (locationState.status != LocationStatus.ready && locationState.status != LocationStatus.initial)
                       Container(
                         margin: const EdgeInsets.only(bottom: 8),
@@ -148,7 +179,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                     const SizedBox(height: 8),
                     
-                    // Zoom Controls (Custom)
+                    // Zoom Controls
                     Card(
                       child: Column(
                         children: [
@@ -184,7 +215,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             builder: (BuildContext context, ScrollController scrollController) {
               return Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).bottomSheetTheme.backgroundColor,
+                  color: Theme.of(context).bottomSheetTheme.backgroundColor ?? Theme.of(context).colorScheme.surface,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                   boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10, spreadRadius: 0)],
                 ),
@@ -205,20 +236,68 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     ),
                     Text('Nearby Incidents', style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 16),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.warning, color: AppColors.riskHighDark),
-                      title: const Text('Theft Reported'),
-                      subtitle: const Text('500m away • Active'),
-                      trailing: const RiskChip(level: RiskLevel.high),
-                    ),
-                    const Divider(),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.info_outline, color: AppColors.riskMediumDark),
-                      title: const Text('Suspicious Activity'),
-                      subtitle: const Text('1.2km away • 2 hrs ago'),
-                      trailing: const RiskChip(level: RiskLevel.medium),
+                    
+                    // Reactive List of Incidents
+                    incidentsAsyncValue.when(
+                      data: (data) {
+                        if (data.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Text('No recent incidents found.'),
+                          );
+                        }
+                        return Column(
+                          children: data.map((incident) {
+                            final currentUser = FirebaseAuth.instance.currentUser;
+                            // Hide unverified incidents unless owned by current user
+                            if (incident.verificationStatus != VerificationStatus.verified && incident.reportedBy != currentUser?.uid) {
+                              return const SizedBox.shrink();
+                            }
+                            
+                            RiskLevel riskLevel;
+                            switch (incident.severity) {
+                              case IncidentSeverity.critical:
+                              case IncidentSeverity.high:
+                                riskLevel = RiskLevel.high;
+                                break;
+                              case IncidentSeverity.medium:
+                                riskLevel = RiskLevel.medium;
+                                break;
+                              case IncidentSeverity.low:
+                                riskLevel = RiskLevel.low;
+                                break;
+                            }
+
+                            final diff = DateTime.now().difference(incident.timestamp);
+                            String timeStr;
+                            if (diff.inMinutes < 60) {
+                              timeStr = '\${diff.inMinutes} mins ago';
+                            } else if (diff.inHours < 24) {
+                              timeStr = '\${diff.inHours} hrs ago';
+                            } else {
+                              timeStr = '\${diff.inDays} days ago';
+                            }
+
+                            return Column(
+                              children: [
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: Icon(
+                                    incident.verificationStatus == VerificationStatus.verified ? Icons.warning : Icons.help_outline, 
+                                    color: riskLevel == RiskLevel.high ? AppColors.riskHighDark : AppColors.riskMediumDark
+                                  ),
+                                  title: Text(incident.title),
+                                  subtitle: Text('${incident.verificationStatus == VerificationStatus.verified ? "Verified" : "Pending"} • $timeStr'),
+                                  trailing: RiskChip(level: riskLevel),
+                                ),
+                                const Divider(),
+                              ],
+                            );
+                          }).toList(),
+                        );
+                      },
+                      loading: () => const Center(child: CircularProgressIndicator()),
+                      error: (err, stack) => Text('Error loading incidents: \$err'),
                     ),
                   ],
                 ),
