@@ -167,7 +167,23 @@ class _ReportIncidentScreenState extends ConsumerState<ReportIncidentScreen> {
                       try {
                         final title = _titleController.text.trim();
                         final desc = _descriptionController.text.trim();
-                        _aiAnalysis = await ref.read(aiServiceProvider).analyzeIncident(title, desc, _selectedCategory);
+                        
+                        List<IncidentModel>? existingIncidents;
+                        try {
+                          final dbService = ref.read(databaseServiceProvider);
+                          final locationState = ref.read(locationServiceProvider);
+                          if (locationState.position != null) {
+                            existingIncidents = await dbService.getNearbyIncidents(
+                              locationState.position!.latitude, 
+                              locationState.position!.longitude, 
+                              10.0 // 10km radius
+                            ).first;
+                          }
+                        } catch (e) {
+                          debugPrint('Could not fetch existing incidents for comparison: \$e');
+                        }
+
+                        _aiAnalysis = await ref.read(aiServiceProvider).analyzeIncident(title, desc, _selectedCategory, existingIncidents);
                       } catch (e) {
                         debugPrint('AI Analysis Failed: \$e');
                       } finally {
@@ -317,7 +333,32 @@ class _ReportIncidentScreenState extends ConsumerState<ReportIncidentScreen> {
                             Text('Severity: \${_aiAnalysis!.severity.toUpperCase()}'),
                             Text('Priority: \${_aiAnalysis!.priority.toUpperCase()}'),
                             Text('Risk Level: \${_aiAnalysis!.riskLevel}'),
+                            Text('Confidence: \${(_aiAnalysis!.confidence * 100).toStringAsFixed(1)}%'),
                             const SizedBox(height: 8),
+                            const Text('AI Summary', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(_aiAnalysis!.summary),
+                            if (_aiAnalysis!.duplicateStatus == 'POSSIBLY_DUPLICATE' || _aiAnalysis!.duplicateStatus == 'LIKELY_DUPLICATE') ...[
+                               const SizedBox(height: 12),
+                               Container(
+                                 padding: const EdgeInsets.all(8),
+                                 decoration: BoxDecoration(
+                                   color: Colors.orange.withValues(alpha: 0.2),
+                                   borderRadius: BorderRadius.circular(8),
+                                   border: Border.all(color: Colors.orange),
+                                 ),
+                                 child: Column(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                   children: [
+                                     const Text('SIMILAR INCIDENT DETECTED', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                                     const SizedBox(height: 4),
+                                     Text('Status: ' + _aiAnalysis!.duplicateStatus.replaceAll('_', ' ')),
+                                     const SizedBox(height: 4),
+                                     const Text('A very similar incident was recently reported. You may still submit this report, but it will be flagged for review.', style: TextStyle(fontSize: 12)),
+                                   ]
+                                 )
+                               )
+                            ],
+                            const SizedBox(height: 12),
                             Text('AI recommendations are suggestions and are not verified facts.', 
                               style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12)),
                           ],
