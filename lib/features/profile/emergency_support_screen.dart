@@ -1,9 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
+import '../../data/services/emergency_service.dart';
 
-class EmergencySupportScreen extends StatelessWidget {
+class EmergencySupportScreen extends ConsumerStatefulWidget {
   const EmergencySupportScreen({super.key});
+
+  @override
+  ConsumerState<EmergencySupportScreen> createState() => _EmergencySupportScreenState();
+}
+
+class _EmergencySupportScreenState extends ConsumerState<EmergencySupportScreen> {
+  bool _isLoading = false;
+
+  Future<void> _triggerSOS() async {
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(emergencyServiceProvider).triggerEmergencySOS();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('SOS request created. Contacts notified securely.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to trigger emergency: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,8 +89,8 @@ class EmergencySupportScreen extends StatelessWidget {
               SizedBox(
                 height: 64,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    // Trigger emergency call logic
+                  onPressed: _isLoading ? null : () {
+                    // Trigger emergency call logic (e.g., launch dialer with 911)
                   },
                   icon: const Icon(Icons.call, size: 28),
                   label: const Text('CALL LOCAL AUTHORITIES (911)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -70,11 +107,11 @@ class EmergencySupportScreen extends StatelessWidget {
               SizedBox(
                 height: 64,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    // Trigger trusted contacts alert
-                  },
-                  icon: const Icon(Icons.group_rounded, size: 28),
-                  label: const Text('ALERT TRUSTED CONTACTS', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  onPressed: _isLoading ? null : _triggerSOS,
+                  icon: _isLoading 
+                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.group_rounded, size: 28),
+                  label: Text(_isLoading ? 'SENDING SOS...' : 'ALERT TRUSTED CONTACTS', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.scaffoldBackgroundColor,
                     foregroundColor: AppColors.riskCriticalDark,
@@ -98,3 +135,4 @@ class EmergencySupportScreen extends StatelessWidget {
     );
   }
 }
+

@@ -4,6 +4,16 @@ service cloud.firestore {
     match /users/{userId} {
       // Users can read and write their own profile
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      match /trusted_contacts/{contactId} {
+        // Only the owner can access their trusted contacts
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      match /emergencies/{emergencyId} {
+        // Only the owner can access their emergency records
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
     
     match /incidents/{incidentId} {
