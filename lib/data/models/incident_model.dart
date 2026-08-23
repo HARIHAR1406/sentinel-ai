@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'incident_ai_analysis.dart';
 
 enum IncidentStatus { pending, verified, rejected, resolved }
 enum VerificationStatus { pending, verified, rejected }
@@ -21,6 +22,7 @@ class IncidentModel {
   final String? address;
   final bool isDuplicate;
   final String? duplicateOf;
+  final IncidentAIAnalysis? aiAnalysis;
 
   const IncidentModel({
     required this.id,
@@ -39,6 +41,7 @@ class IncidentModel {
     this.address,
     this.isDuplicate = false,
     this.duplicateOf,
+    this.aiAnalysis,
   });
 
   factory IncidentModel.fromFirestore(DocumentSnapshot doc) {
@@ -55,7 +58,7 @@ class IncidentModel {
       latitude: lat,
       longitude: lng,
       reportedBy: data['reportedBy'] ?? '',
-      severity: _parseSeverity(data['severity']),
+      severity: parseSeverity(data['severity']),
       status: _parseStatus(data['status']),
       verificationStatus: _parseVerificationStatus(data['verificationStatus']),
       timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -64,6 +67,7 @@ class IncidentModel {
       address: data['address'],
       isDuplicate: data['isDuplicate'] ?? false,
       duplicateOf: data['duplicateOf'],
+      aiAnalysis: data['aiAnalysis'] != null ? IncidentAIAnalysis.fromMap(Map<String, dynamic>.from(data['aiAnalysis'])) : null,
     );
   }
 
@@ -83,10 +87,11 @@ class IncidentModel {
       if (address != null) 'address': address,
       'isDuplicate': isDuplicate,
       if (duplicateOf != null) 'duplicateOf': duplicateOf,
+      if (aiAnalysis != null) 'aiAnalysis': aiAnalysis!.toMap(),
     };
   }
 
-  static IncidentSeverity _parseSeverity(String? value) {
+  static IncidentSeverity parseSeverity(String? value) {
     switch (value) {
       case 'critical': return IncidentSeverity.critical;
       case 'high': return IncidentSeverity.high;

@@ -8,6 +8,8 @@ import '../../shared/widgets/sentinel_button.dart';
 import '../../data/services/database_service.dart';
 import '../../data/services/location_service.dart';
 import '../../data/models/incident_model.dart';
+import '../../data/models/incident_ai_analysis.dart';
+import '../../data/services/ai_service.dart';
 
 class ReportIncidentScreen extends ConsumerStatefulWidget {
   const ReportIncidentScreen({super.key});
@@ -19,6 +21,8 @@ class ReportIncidentScreen extends ConsumerStatefulWidget {
 class _ReportIncidentScreenState extends ConsumerState<ReportIncidentScreen> {
   int _currentStep = 0;
   bool _isSubmitting = false;
+  bool _isAnalyzingAI = false;
+  IncidentAIAnalysis? _aiAnalysis;
 
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -91,10 +95,11 @@ class _ReportIncidentScreenState extends ConsumerState<ReportIncidentScreen> {
         latitude: locationState.position!.latitude,
         longitude: locationState.position!.longitude,
         reportedBy: user.uid,
-        severity: IncidentSeverity.medium, // Default for now
+        severity: _aiAnalysis != null ? IncidentModel.parseSeverity(_aiAnalysis!.severity) : IncidentSeverity.medium,
         status: IncidentStatus.pending,
         verificationStatus: VerificationStatus.pending,
         timestamp: DateTime.now(),
+        aiAnalysis: _aiAnalysis,
       );
 
       await ref.read(databaseServiceProvider).reportIncident(incident);
@@ -153,8 +158,26 @@ class _ReportIncidentScreenState extends ConsumerState<ReportIncidentScreen> {
                 child: Stepper(
                   type: StepperType.vertical,
                   currentStep: _currentStep,
-                  onStepContinue: () {
-                    if (_currentStep < 4) {
+                  onStepContinue: () async {
+                    if (_currentStep == 2) {
+                      setState(() {
+                        _currentStep += 1;
+                        _isAnalyzingAI = true;
+                      });
+                      try {
+                        final title = _titleController.text.trim();
+                        final desc = _descriptionController.text.trim();
+                        _aiAnalysis = await ref.read(aiServiceProvider).analyzeIncident(title, desc, _selectedCategory);
+                      } catch (e) {
+                        debugPrint('AI Analysis Failed: \$e');
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _isAnalyzingAI = false;
+                          });
+                        }
+                      }
+                    } else if (_currentStep < 4) {
                       setState(() => _currentStep += 1);
                     } else {
                       _submitReport();
@@ -280,18 +303,25 @@ class _ReportIncidentScreenState extends ConsumerState<ReportIncidentScreen> {
                           borderRadius: BorderRadius.circular(16),
                           border: const Border(left: BorderSide(color: AppColors.aiHorizon, width: 4)),
                         ),
-                        child: Column(
+                        child: _isAnalyzingAI
+                          ? const Center(child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: CircularProgressIndicator(),
+                            ))
+                          : _aiAnalysis != null ? Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text('AI Analysis Complete', style: TextStyle(color: AppColors.aiHorizon, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 8),
-                            Text('Category: \$_selectedCategory'),
-                            const Text('Severity: Medium'),
+                            Text('Category: \${_aiAnalysis!.category} (\${_aiAnalysis!.subCategory})'),
+                            Text('Severity: \${_aiAnalysis!.severity.toUpperCase()}'),
+                            Text('Priority: \${_aiAnalysis!.priority.toUpperCase()}'),
+                            Text('Risk Level: \${_aiAnalysis!.riskLevel}'),
                             const SizedBox(height: 8),
                             Text('AI recommendations are suggestions and are not verified facts.', 
                               style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12)),
                           ],
-                        ),
+                        ) : const Text('AI Analysis failed. You can still submit the report.'),
                       ),
                       isActive: _currentStep >= 3,
                     ),
