@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../core/exceptions/backend_required_exception.dart';
+import '../../core/exceptions/route_exceptions.dart';
 import '../../shared/widgets/risk_chip.dart';
 import '../../data/models/route_risk_result.dart';
 import '../../data/services/route_providers.dart';
@@ -64,10 +64,14 @@ class RouteComparisonScreen extends ConsumerWidget {
             )
           ),
           error: (error, stackTrace) {
-            if (error is BackendRequiredException) {
+            if (error is BackendUnavailableException) {
+              return _buildBackendRequiredState(context, theme, error.message);
+            } else if (error is RouteTimeoutException) {
+              return _buildBackendRequiredState(context, theme, 'Request timed out. Please try again.');
+            } else if (error is BackendRequiredException) {
               return _buildBackendRequiredState(context, theme, error.message);
             }
-            return _buildEmptyState(context, 'An error occurred while calculating routes: \$error');
+            return _buildEmptyState(context, 'An error occurred while calculating routes: $error');
           },
         ),
       ),
