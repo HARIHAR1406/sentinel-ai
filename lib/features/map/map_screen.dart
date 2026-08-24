@@ -8,6 +8,7 @@ import '../../shared/widgets/risk_chip.dart';
 import '../../data/services/location_service.dart';
 import '../../data/services/database_service.dart';
 import '../../data/models/incident_model.dart';
+import '../../data/services/route_providers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
@@ -92,6 +93,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         ),
       );
     }
+
+    final destination = ref.watch(selectedDestinationProvider);
+    if (destination != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('destination_marker'),
+          position: destination,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          infoWindow: const InfoWindow(title: 'Destination', snippet: 'Tap "Find Safe Route" to analyze'),
+        ),
+      );
+    }
+    
     return markers;
   }
 
@@ -113,6 +127,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
             markers: _buildMarkers(context, incidents),
+            onLongPress: (LatLng pos) {
+              ref.read(selectedDestinationProvider.notifier).state = pos;
+              
+              // Set origin implicitly if we have a current location
+              final loc = ref.read(locationServiceProvider).position;
+              if (loc != null) {
+                ref.read(selectedOriginProvider.notifier).state = LatLng(loc.latitude, loc.longitude);
+              }
+            },
             onMapCreated: (GoogleMapController controller) {
               if (!_controller.isCompleted) {
                 _controller.complete(controller);
@@ -318,6 +341,54 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               );
             },
           ),
+          
+          // Destination Info / Find Route Button
+          if (ref.watch(selectedDestinationProvider) != null)
+            Positioned(
+              bottom: 120, // Above emergency button
+              left: 16,
+              right: 16,
+              child: Card(
+                elevation: 6,
+                color: Theme.of(context).colorScheme.primaryContainer,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.place, color: AppColors.sentinelBlue),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Destination selected',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.analytics_outlined, size: 16),
+                        label: const Text('Analyze Risk'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.sentinelBlue,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () {
+                          // Ensure we have an origin before navigating
+                          final loc = ref.read(locationServiceProvider).position;
+                          if (loc == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Current location required for routing.')),
+                            );
+                            return;
+                          }
+                          ref.read(selectedOriginProvider.notifier).state = LatLng(loc.latitude, loc.longitude);
+                          context.push('/route_comparison');
+                        },
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
       floatingActionButton: Padding(
