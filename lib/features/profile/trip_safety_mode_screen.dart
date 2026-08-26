@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/trip_model.dart';
 import '../../data/models/route_risk_result.dart';
 import '../../data/services/trip_safety_providers.dart';
+import '../../data/services/safety_alerts_provider.dart';
 import '../../shared/widgets/risk_chip.dart';
 
 class TripSafetyModeScreen extends ConsumerWidget {
@@ -16,6 +17,7 @@ class TripSafetyModeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final tripState = ref.watch(tripSafetyProvider);
+    final activeAlerts = ref.watch(safetyAlertsProvider).where((a) => !a.isRead).toList();
 
     if (tripState.status == TripStatus.idle || tripState.status == TripStatus.completed) {
       return _buildEmptyState(context, theme);
@@ -37,6 +39,10 @@ class TripSafetyModeScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             _buildRouteInformation(theme, tripState),
             const SizedBox(height: 16),
+            if (activeAlerts.isNotEmpty) ...[
+              _buildContextualWarning(theme, context, activeAlerts),
+              const SizedBox(height: 16),
+            ],
             _buildRiskSummary(theme, tripState),
             const SizedBox(height: 16),
             _buildCurrentLocation(theme, tripState),
@@ -207,6 +213,40 @@ class TripSafetyModeScreen extends ConsumerWidget {
                   ),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContextualWarning(ThemeData theme, BuildContext context, List activeAlerts) {
+    final highestAlert = activeAlerts.first; // Already sorted by priority
+
+    return Card(
+      color: theme.colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+                const SizedBox(width: 8),
+                Text(
+                  'Safety Alert', 
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.error,
+                  )
+                ),
+              ],
+            ),
+            const Divider(),
+            Text(
+              highestAlert.description,
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
             ),
           ],
         ),
