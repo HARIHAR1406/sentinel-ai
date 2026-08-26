@@ -8,6 +8,7 @@ import '../../core/exceptions/route_exceptions.dart';
 import '../../shared/widgets/risk_chip.dart';
 import '../../data/models/route_risk_result.dart';
 import '../../data/services/route_providers.dart';
+import '../../data/services/trip_safety_providers.dart';
 
 class RouteComparisonScreen extends ConsumerWidget {
   const RouteComparisonScreen({super.key});
@@ -43,7 +44,8 @@ class RouteComparisonScreen extends ConsumerWidget {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: _buildRouteOption(
-                      context, 
+                      context,
+                      ref,
                       theme, 
                       result,
                       result.recommendation.contains('recommended') || result.recommendation.contains('Optimal')
@@ -126,7 +128,7 @@ class RouteComparisonScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRouteOption(BuildContext context, ThemeData theme, RouteRiskResult result, bool isRecommended) {
+  Widget _buildRouteOption(BuildContext context, WidgetRef ref, ThemeData theme, RouteRiskResult result, bool isRecommended) {
     return Container(
       decoration: BoxDecoration(
         color: isRecommended ? theme.colorScheme.surface : theme.scaffoldBackgroundColor,
@@ -242,9 +244,8 @@ class RouteComparisonScreen extends ConsumerWidget {
             height: 48,
             child: ElevatedButton(
               onPressed: () {
-                // Here we would dispatch the selected route back to MapScreen to draw it.
-                // Since CloudRouteService always throws right now, this won't be reachable.
-                context.pop();
+                ref.read(tripSafetyProvider.notifier).startTrip(result);
+                context.push('/trip_safety_mode');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: isRecommended ? AppColors.sentinelBlue : Colors.transparent,

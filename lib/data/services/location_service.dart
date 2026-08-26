@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,6 +37,8 @@ class LocationState {
 }
 
 class LocationService extends StateNotifier<LocationState> {
+  StreamSubscription<Position>? _positionStream;
+
   LocationService() : super(LocationState());
 
   Future<void> initializeAndGetLocation() async {
@@ -80,12 +83,44 @@ class LocationService extends StateNotifier<LocationState> {
     }
   }
 
+  void startListening() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+    
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return;
+
+    _positionStream?.cancel();
+    _positionStream = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10, // Only update if moved 10 meters
+      ),
+    ).listen((Position position) {
+      state = state.copyWith(
+        status: LocationStatus.ready,
+        position: position,
+      );
+    });
+  }
+
+  void stopListening() {
+    _positionStream?.cancel();
+    _positionStream = null;
+  }
+
   Future<void> openSettings() async {
     if (state.status == LocationStatus.serviceDisabled) {
       await Geolocator.openLocationSettings();
     } else {
       await Geolocator.openAppSettings();
     }
+  }
+
+  @override
+  void dispose() {
+    _positionStream?.cancel();
+    super.dispose();
   }
 }
 
