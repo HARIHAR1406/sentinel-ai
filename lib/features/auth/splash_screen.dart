@@ -15,7 +15,7 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
-        context.go('/login');
+        context.go('/home'); // GoRouter redirect handles unauthenticated users -> /login
       }
     });
   }

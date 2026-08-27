@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../models/incident_model.dart';
 import '../models/user_model.dart';
 import '../models/trusted_contact_model.dart';
@@ -83,39 +84,44 @@ class FirestoreIncidentService implements DatabaseService {
   Future<void> verifyIncident(String incidentId) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('Authentication required');
-    await _firestore.collection('incidents').doc(incidentId).update({
-      'verificationStatus': 'verified',
-      'status': 'verified',
-      'verifiedBy': user.uid,
-      'verifiedAt': FieldValue.serverTimestamp(),
-    });
+    try {
+      await FirebaseFunctions.instance.httpsCallable('moderateIncident').call({
+        'incidentId': incidentId,
+        'action': 'verify',
+      });
+    } catch (e) {
+      throw Exception('Failed to verify incident: $e');
+    }
   }
 
   @override
   Future<void> rejectIncident(String incidentId, String reason) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('Authentication required');
-    await _firestore.collection('incidents').doc(incidentId).update({
-      'verificationStatus': 'rejected',
-      'status': 'rejected',
-      'verifiedBy': user.uid,
-      'verifiedAt': FieldValue.serverTimestamp(),
-      'rejectionReason': reason,
-    });
+    try {
+      await FirebaseFunctions.instance.httpsCallable('moderateIncident').call({
+        'incidentId': incidentId,
+        'action': 'reject',
+        'reason': reason,
+      });
+    } catch (e) {
+      throw Exception('Failed to reject incident: $e');
+    }
   }
 
   @override
   Future<void> markIncidentDuplicate(String incidentId, String originalIncidentId) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('Authentication required');
-    await _firestore.collection('incidents').doc(incidentId).update({
-      'verificationStatus': 'duplicate',
-      'status': 'rejected', // duplicates are logically rejected from public map
-      'verifiedBy': user.uid,
-      'verifiedAt': FieldValue.serverTimestamp(),
-      'isDuplicate': true,
-      'duplicateOf': originalIncidentId,
-    });
+    try {
+      await FirebaseFunctions.instance.httpsCallable('moderateIncident').call({
+        'incidentId': incidentId,
+        'action': 'duplicate',
+        'duplicateOf': originalIncidentId,
+      });
+    } catch (e) {
+      throw Exception('Failed to mark duplicate: $e');
+    }
   }
 
   @override
