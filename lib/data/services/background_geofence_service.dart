@@ -69,7 +69,7 @@ void callbackDispatcher() {
             InitializationSettings(android: initializationSettingsAndroid);
             
         await flutterLocalNotificationsPlugin.initialize(
-          initializationSettings,
+          settings: initializationSettings,
         );
         
         const AndroidNotificationDetails androidPlatformChannelSpecifics =
@@ -84,10 +84,10 @@ void callbackDispatcher() {
             NotificationDetails(android: androidPlatformChannelSpecifics);
             
         await flutterLocalNotificationsPlugin.show(
-          DateTime.now().millisecond,
-          'Sentinel AI Geofence Alert',
-          'High Risk Zone: $alertMessage',
-          platformChannelSpecifics,
+          id: DateTime.now().millisecond,
+          title: 'Sentinel AI Geofence Alert',
+          body: 'High Risk Zone: $alertMessage',
+          notificationDetails: platformChannelSpecifics,
         );
       }
       
