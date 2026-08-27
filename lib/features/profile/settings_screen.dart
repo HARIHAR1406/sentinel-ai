@@ -3,15 +3,17 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/sentinel_button.dart';
 import '../../data/services/background_geofence_service.dart';
+import '../../core/theme/theme_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isBackgroundMonitoringEnabled = false;
 
   Future<void> _toggleBackgroundMonitoring(bool value) async {
@@ -73,16 +75,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(child: SentinelButton(label: 'System', isGhost: true, onPressed: (){
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Theme persistence pending state management implementation.')));
+                Expanded(child: SentinelButton(label: 'System', isGhost: ref.watch(themeProvider) != ThemeMode.system, onPressed: (){
+                  ref.read(themeProvider.notifier).setTheme(ThemeMode.system);
                 })),
                 const SizedBox(width: 8),
-                Expanded(child: SentinelButton(label: 'Light', isGhost: true, onPressed: (){
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Theme persistence pending state management implementation.')));
+                Expanded(child: SentinelButton(label: 'Light', isGhost: ref.watch(themeProvider) != ThemeMode.light, onPressed: (){
+                  ref.read(themeProvider.notifier).setTheme(ThemeMode.light);
                 })),
                 const SizedBox(width: 8),
-                Expanded(child: SentinelButton(label: 'Dark', onPressed: (){
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Theme persistence pending state management implementation.')));
+                Expanded(child: SentinelButton(label: 'Dark', isGhost: ref.watch(themeProvider) != ThemeMode.dark, onPressed: (){
+                  ref.read(themeProvider.notifier).setTheme(ThemeMode.dark);
                 })),
               ],
             ),
